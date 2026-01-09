@@ -408,52 +408,52 @@ python glctl.py tag unprotect --all v1.*
 
 ```bash
 # 使用简称创建合并请求
-python glctl.py merge-request create --repo proj1 feature main "Feature merge"
+python glctl.py merge-request create --repo proj1 feature master "Feature merge"
 
 # 使用简称创建合并请求（指派人）
-python glctl.py merge-request create --repo proj1 feature main "Feature merge" --assignee john_doe
+python glctl.py merge-request create --repo proj1 feature master "Feature merge" --assignee john_doe
 
 # 使用简称创建合并请求（审核人）
-python glctl.py merge-request create --repo proj1 feature main "Feature merge" --reviewer john_doe
+python glctl.py merge-request create --repo proj1 feature master "Feature merge" --reviewer john_doe
 
 # 使用简称创建合并请求（指派人和审核人）
-python glctl.py merge-request create --repo proj1 feature main "Feature merge" --assignee john_doe --reviewer jane_doe
+python glctl.py merge-request create --repo proj1 feature master "Feature merge" --assignee john_doe --reviewer jane_doe
 
 # 使用完整路径创建合并请求
-python glctl.py merge-request create --repo group1/project1 feature main "Feature merge"
+python glctl.py merge-request create --repo group1/project1 feature master "Feature merge"
 
 # 使用完整路径创建合并请求（指派人）
-python glctl.py merge-request create --repo group1/project1 feature main "Feature merge" --assignee john_doe
+python glctl.py merge-request create --repo group1/project1 feature master "Feature merge" --assignee john_doe
 
 # 使用完整路径创建合并请求（审核人）
-python glctl.py merge-request create --repo group1/project1 feature main "Feature merge" --reviewer john_doe
+python glctl.py merge-request create --repo group1/project1 feature master "Feature merge" --reviewer john_doe
 
 # 使用完整路径创建合并请求（指派人和审核人）
-python glctl.py merge-request create --repo group1/project1 feature main "Feature merge" --assignee john_doe --reviewer jane_doe
+python glctl.py merge-request create --repo group1/project1 feature master "Feature merge" --assignee john_doe --reviewer jane_doe
 
 # 基于映射文件中的所有仓库创建合并请求
-python glctl.py merge-request create --list feature main "Feature merge"
+python glctl.py merge-request create --list feature master "Feature merge"
 
 # 基于映射文件中的所有仓库创建合并请求（指派人）
-python glctl.py merge-request create --list feature main "Feature merge" --assignee john_doe
+python glctl.py merge-request create --list feature master "Feature merge" --assignee john_doe
 
 # 基于映射文件中的所有仓库创建合并请求（审核人）
-python glctl.py merge-request create --list feature main "Feature merge" --reviewer john_doe
+python glctl.py merge-request create --list feature master "Feature merge" --reviewer john_doe
 
 # 基于映射文件中的所有仓库创建合并请求（指派人和审核人）
-python glctl.py merge-request create --list feature main "Feature merge" --assignee john_doe --reviewer jane_doe
+python glctl.py merge-request create --list feature master "Feature merge" --assignee john_doe --reviewer jane_doe
 
 # 所有仓库创建合并请求
-python glctl.py merge-request create --all feature main "Feature merge"
+python glctl.py merge-request create --all feature master "Feature merge"
 
 # 所有仓库创建合并请求（指派人）
-python glctl.py merge-request create --all feature main "Feature merge" --assignee john_doe
+python glctl.py merge-request create --all feature master "Feature merge" --assignee john_doe
 
 # 所有仓库创建合并请求（审核人）
-python glctl.py merge-request create --all feature main "Feature merge" --reviewer jane_doe
+python glctl.py merge-request create --all feature master "Feature merge" --reviewer jane_doe
 
 # 所有仓库创建合并请求（指派人和审核人）
-python glctl.py merge-request create --all feature main "Feature merge" --assignee john_doe --reviewer jane_doe
+python glctl.py merge-request create --all feature master "Feature merge" --assignee john_doe --reviewer jane_doe
 ```
 
 ### 10.2 批准合并请求
@@ -651,36 +651,36 @@ python glctl.py mapping add group1/project1 proj1
 python glctl.py mapping add group2/project2 proj2
 
 # 4. 创建分支
-python glctl.py branch create --repo proj1 feature main
-python glctl.py branch create --repo proj2 feature main
+python glctl.py branch create --repo proj1 feature master
+python glctl.py branch create --repo proj2 feature master
 
 # 5. 保护分支
-python glctl.py branch protect --repo proj1 main
-python glctl.py branch protect --repo proj2 main
+python glctl.py branch protect --repo proj1 master
+python glctl.py branch protect --repo proj2 master
 
 # 6. 创建合并请求
-python glctl.py merge-request create --repo proj1 feature main "Feature merge"
-python glctl.py merge-request create --repo proj2 feature main "Feature merge"
+python glctl.py merge-request create --repo proj1 feature master "Feature merge"
+python glctl.py merge-request create --repo proj2 feature master "Feature merge"
 
 # 7. 批准合并请求 - 通过IID
 python glctl.py merge-request approve --repo proj1 1
 python glctl.py merge-request approve --repo proj2 1
 
 # 或者通过分支信息
-python glctl.py merge-request approve --repo proj1 feature main
-python glctl.py merge-request approve --repo proj2 feature main
+python glctl.py merge-request approve --repo proj1 feature master
+python glctl.py merge-request approve --repo proj2 feature master
 
 # 8. 合并合并请求 - 通过IID
 python glctl.py merge-request merge --repo proj1 1
 python glctl.py merge-request merge --repo proj2 1
 
 # 或者通过分支信息
-python glctl.py merge-request merge --repo proj1 feature main
-python glctl.py merge-request merge --repo proj2 feature main
+python glctl.py merge-request merge --repo proj1 feature master
+python glctl.py merge-request merge --repo proj2 feature master
 
 # 9. 创建Tag
-python glctl.py tag create --repo proj1 v1.0.0 main
-python glctl.py tag create --repo proj2 v1.0.0 main
+python glctl.py tag create --repo proj1 v1.0.0 master
+python glctl.py tag create --repo proj2 v1.0.0 master
 
 # 10. 保护Tag
 python glctl.py tag protect --repo proj1 v1.*
