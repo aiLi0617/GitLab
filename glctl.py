@@ -17,7 +17,7 @@ import gitlab
 
 # 默认配置 - 可以直接在脚本中修改
 DEFAULT_GITLAB_URL = "http://139.159.207.40:29080/"  # GitLab服务器URL
-DEFAULT_GITLAB_TOKEN = "glpat-rxUSshz19TSzNmJQ4XQW"  # GitLab访问令牌
+DEFAULT_GITLAB_TOKEN = "xxxxx"  # GitLab访问令牌
 DEFAULT_MAPPING_FILE = "repo-mapping.txt"  # 映射文件路径
 
 # 访问级别映射
