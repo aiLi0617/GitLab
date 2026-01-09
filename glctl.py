@@ -467,6 +467,63 @@ class MergeRequestManager:
                            assignee_id: Optional[str] = None, reviewer_id: Optional[str] = None) -> bool:
         """创建合并请求"""
         try:
+            # 1. 检查分支间是否有差异
+            logger.info(f"检查分支差异: {source_branch} -> {target_branch}")
+
+            # 使用兼容不同python-gitlab版本的方式进行分支比较
+            if hasattr(project, 'compare'):
+                # 新版本使用compare方法
+                compare_result = project.compare(from_branch=source_branch, to_branch=target_branch)
+            else:
+                # 旧版本使用repository_compare方法
+                compare_result = project.repository_compare(source_branch, target_branch)
+
+            # 检查是否有实际差异
+
+            # 1. 首先检查compare_same_ref字段 - 这是GitLab API判断分支是否相同的直接标志
+            if compare_result.get('compare_same_ref', False):
+                logger.info(f"分支指向相同的提交，跳过创建合并请求: {source_branch} -> {target_branch}")
+                return True
+
+            # 2. 检查是否有实际差异 - 使用get()方法处理可能缺失的键
+            stats = compare_result.get('stats', {})
+            additions = stats.get('additions', 0)
+            deletions = stats.get('deletions', 0)
+            diffs = compare_result.get('diffs', [])
+
+            # 3. 检查双向差异 - 关键修复：如果反向比较没有差异，说明目标分支已经包含源分支的所有更改
+            try:
+                if hasattr(project, 'compare'):
+                    reverse_compare = project.compare(from_branch=target_branch, to_branch=source_branch)
+                else:
+                    reverse_compare = project.repository_compare(target_branch, source_branch)
+
+                # 检查反向比较是否有差异
+                reverse_stats = reverse_compare.get('stats', {})
+                reverse_additions = reverse_stats.get('additions', 0)
+                reverse_deletions = reverse_stats.get('deletions', 0)
+                reverse_diffs = reverse_compare.get('diffs', [])
+
+                # 如果反向比较没有差异，说明目标分支已经包含源分支的所有更改
+                # 这就是UI显示"合并请求不包含任何更改"的情况
+                if reverse_additions == 0 and reverse_deletions == 0 and len(reverse_diffs) == 0:
+                    logger.info(f"目标分支已包含源分支的所有更改，跳过创建合并请求: {source_branch} -> {target_branch}")
+                    logger.debug(f"正向比较: {len(diffs)} 个差异，反向比较: {len(reverse_diffs)} 个差异")
+                    return True
+            except Exception as e:
+                logger.warning(f"反向比较失败: {e}，继续使用正向比较结果")
+
+            # 4. 只有当有实际的文件差异（additions/deletions > 0 或 diffs列表非空）时，才认为有需要合并的差异
+            has_actual_changes = additions > 0 or deletions > 0 or len(diffs) > 0
+
+            if not has_actual_changes:
+                logger.info(f"分支间无实际差异，跳过创建合并请求: {source_branch} -> {target_branch}")
+                return True
+
+            # 分支有差异，继续创建合并请求
+            logger.info(f"分支间存在差异，准备创建合并请求: {source_branch} -> {target_branch}")
+            logger.debug(f"差异统计: {additions} 新增, {deletions} 删除")
+
             mr_data = {
                 'source_branch': source_branch,
                 'target_branch': target_branch,
