@@ -529,7 +529,14 @@ class MergeRequestManager:
 
             # 分支有文件差异，继续创建合并请求
             logger.info(f"分支间存在文件差异，准备创建合并请求: {source_branch} -> {target_branch}")
-            logger.info(f"差异统计: {additions} 新增, {deletions} 删除")
+            # 差异统计：优先使用stats中的additions和deletions，若为0但有diffs，则显示文件数量
+            files_changed = len(diffs) if len(diffs) > 0 else 0
+            if additions > 0 or deletions > 0:
+                logger.info(f"差异统计: {additions} 新增, {deletions} 删除")
+            elif files_changed > 0:
+                logger.info(f"差异统计: {files_changed} 个文件变更, 0 新增, 0 删除")
+            else:
+                logger.info(f"差异统计: {additions} 新增, {deletions} 删除")
 
             mr_data = {
                 'source_branch': source_branch,
@@ -630,7 +637,8 @@ class MergeRequestManager:
                     logger.info(f"直接使用指派人ID: {assignee_id}")
                     assigned = True
                 except ValueError:
-                    logger.warning(f"无效的指派人ID: {assignee_id}")
+                    logger.error(f"无效的指派人ID: {assignee_id}")
+                    return False
             elif assignee:
                 # 通过标识符查找用户
                 try:
@@ -640,9 +648,11 @@ class MergeRequestManager:
                         logger.info(f"找到指派人 {assignee}，ID: {user.id}")
                         assigned = True
                     else:
-                        logger.warning(f"未找到指派人: {assignee}")
+                        logger.error(f"未找到指派人: {assignee}")
+                        return False
                 except Exception as e:
-                    logger.warning(f"获取指派人失败: {e}")
+                    logger.error(f"获取指派人失败: {e}")
+                    return False
 
             if assigned:
                 logger.info(f"将合并请求指派给: {assignee or assignee_id}")
@@ -655,7 +665,8 @@ class MergeRequestManager:
                     reviewers.append(int(reviewer_id))
                     logger.info(f"直接使用审核人ID: {reviewer_id}")
                 except ValueError:
-                    logger.warning(f"无效的审核人ID: {reviewer_id}")
+                    logger.error(f"无效的审核人ID: {reviewer_id}")
+                    return False
             elif reviewer:
                 # 通过标识符查找用户
                 try:
@@ -664,9 +675,11 @@ class MergeRequestManager:
                         reviewers.append(user.id)
                         logger.info(f"找到审核人 {reviewer}，ID: {user.id}")
                     else:
-                        logger.warning(f"未找到审核人: {reviewer}")
+                        logger.error(f"未找到审核人: {reviewer}")
+                        return False
                 except Exception as e:
-                    logger.warning(f"获取审核人失败: {e}")
+                    logger.error(f"获取审核人失败: {e}")
+                    return False
 
             # 如果有审核人，添加到mr_data
             if reviewers:
@@ -810,24 +823,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='GitLab控制脚本 - 用于管理GitLab仓库的命令行工具',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-使用示例:
-  # 映射管理
-  python glctl.py mapping list
-  python glctl.py mapping add group1/project1 proj1
 
-  # 分支管理
-  python glctl.py branch create --repo proj1 feature main
-  python glctl.py branch protect --list master
-
-  # Tag管理
-  python glctl.py tag create --all v1.0.0 master
-  python glctl.py tag protect --repo proj1 v1.*
-
-  # 合并请求管理
-  python glctl.py merge-request create --repo proj1 feature main "Feature merge"
-  python glctl.py merge-request approve --repo proj1 1
-        """
     )
 
     # 全局选项
@@ -877,25 +873,25 @@ def main():
     branch_create_parser = branch_subparsers.add_parser('create', help='创建分支')
     branch_create_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
     branch_create_parser.add_argument('branch_name', help='新分支名称')
-    branch_create_parser.add_argument('base_branch', help='基础分支名称')
-    branch_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    branch_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    branch_create_parser.add_argument('base_branch', help='基础分支名称，新分支将基于此分支创建')
+    branch_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    branch_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # branch protect
     branch_protect_parser = branch_subparsers.add_parser('protect', help='保护分支')
     branch_protect_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
     branch_protect_parser.add_argument('branch_name', help='分支名称')
     branch_protect_parser.add_argument('--access-level', default='noone', choices=ACCESS_LEVEL_MAP.keys(),
-                                       help='访问级别')
-    branch_protect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    branch_protect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+                                       help='访问级别，可选值: noone(无人可访问), maintainers(仅维护者可访问), developers(开发者和维护者可访问)')
+    branch_protect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    branch_protect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # branch unprotect
     branch_unprotect_parser = branch_subparsers.add_parser('unprotect', help='取消分支保护')
     branch_unprotect_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
     branch_unprotect_parser.add_argument('branch_name', help='分支名称')
-    branch_unprotect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    branch_unprotect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    branch_unprotect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    branch_unprotect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # ========== Tag管理命令 ==========
     tag_parser = subparsers.add_parser('tag', help='Tag管理')
@@ -905,24 +901,24 @@ def main():
     tag_create_parser = tag_subparsers.add_parser('create', help='创建Tag')
     tag_create_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
     tag_create_parser.add_argument('tag_name', help='Tag名称')
-    tag_create_parser.add_argument('ref', help='引用（分支名称或提交SHA）')
-    tag_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    tag_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    tag_create_parser.add_argument('ref', help='引用（分支名称或提交SHA），Tag将基于此引用创建')
+    tag_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    tag_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # tag protect
     tag_protect_parser = tag_subparsers.add_parser('protect', help='保护Tag')
     tag_protect_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    tag_protect_parser.add_argument('tag_pattern', help='Tag名称模式')
-    tag_protect_parser.add_argument('--access-level', default='noone', choices=ACCESS_LEVEL_MAP.keys(), help='访问级别')
-    tag_protect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    tag_protect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    tag_protect_parser.add_argument('tag_pattern', help='Tag名称模式（支持通配符，如v1.*）')
+    tag_protect_parser.add_argument('--access-level', default='noone', choices=ACCESS_LEVEL_MAP.keys(), help='访问级别，可选值: noone(无人可访问), maintainers(仅维护者可访问), developers(开发者和维护者可访问)')
+    tag_protect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    tag_protect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # tag unprotect
     tag_unprotect_parser = tag_subparsers.add_parser('unprotect', help='取消Tag保护')
     tag_unprotect_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    tag_unprotect_parser.add_argument('tag_pattern', help='Tag名称模式')
-    tag_unprotect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    tag_unprotect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    tag_unprotect_parser.add_argument('tag_pattern', help='Tag名称模式（支持通配符，如v1.*）')
+    tag_unprotect_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    tag_unprotect_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # ========== 合并请求管理命令 ==========
     mr_parser = subparsers.add_parser('merge-request', help='合并请求管理')
@@ -934,40 +930,40 @@ def main():
     mr_create_parser.add_argument('source_branch', help='源分支名称')
     mr_create_parser.add_argument('target_branch', help='目标分支名称')
     mr_create_parser.add_argument('title', help='合并请求标题')
-    mr_create_parser.add_argument('--assignee', help='指派人用户名或ID')
-    mr_create_parser.add_argument('--reviewer', help='审核人用户名或ID')
-    mr_create_parser.add_argument('--assignee-id', help='指派人ID（跳过用户查找）')
-    mr_create_parser.add_argument('--reviewer-id', help='审核人ID（跳过用户查找）')
-    mr_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    mr_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    mr_create_parser.add_argument('--assignee', help='指派人用户名或ID，将合并请求指派给指定用户')
+    mr_create_parser.add_argument('--reviewer', help='审核人用户名或ID，添加指定用户为合并请求审核人')
+    mr_create_parser.add_argument('--assignee-id', help='指派人ID（跳过用户查找），直接使用用户ID指派')
+    mr_create_parser.add_argument('--reviewer-id', help='审核人ID（跳过用户查找），直接使用用户ID添加审核人')
+    mr_create_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    mr_create_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # merge-request approve
     mr_approve_parser = mr_subparsers.add_parser('approve', help='批准合并请求')
     mr_approve_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    mr_approve_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支')
-    mr_approve_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    mr_approve_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    mr_approve_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支，支持通过ID或分支组合定位合并请求')
+    mr_approve_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    mr_approve_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # merge-request merge
     mr_merge_parser = mr_subparsers.add_parser('merge', help='合并合并请求')
     mr_merge_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    mr_merge_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支')
-    mr_merge_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    mr_merge_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    mr_merge_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支，支持通过ID或分支组合定位合并请求')
+    mr_merge_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    mr_merge_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # merge-request close
     mr_close_parser = mr_subparsers.add_parser('close', help='关闭合并请求')
     mr_close_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    mr_close_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支')
-    mr_close_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    mr_close_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    mr_close_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支，支持通过ID或分支组合定位合并请求')
+    mr_close_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    mr_close_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     # merge-request approve-and-merge
     mr_approve_merge_parser = mr_subparsers.add_parser('approve-and-merge', help='批准并合并合并请求')
     mr_approve_merge_parser.add_argument('--repo', help='仓库标识（完整路径或简称）')
-    mr_approve_merge_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支')
-    mr_approve_merge_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库')
-    mr_approve_merge_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库')
+    mr_approve_merge_parser.add_argument('args', nargs='+', help='合并请求IID 或 源分支 目标分支，支持通过ID或分支组合定位合并请求')
+    mr_approve_merge_parser.add_argument('--list', action='store_true', help='使用映射文件中的所有仓库，对所有映射的仓库执行操作')
+    mr_approve_merge_parser.add_argument('--all', action='store_true', help='使用所有可访问仓库，对当前用户可访问的所有仓库执行操作')
 
     args = parser.parse_args()
 
