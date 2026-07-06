@@ -17,13 +17,14 @@ from lib.projects_loader import (
     local_path_for_project,
     resolve_projects_path,
 )
+from lib.i18n import t
 from lib.utils import BatchResult
 
 console = Console()
 
 
 def register(app: typer.Typer) -> None:
-    @app.command("clone")
+    @app.command("clone", help=t("cmd.clone.help"))
     def clone(
         ctx: typer.Context,
         project: Optional[list[str]] = typer.Option(None, "--project", "-p"),

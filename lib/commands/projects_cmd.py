@@ -7,13 +7,15 @@ from rich.console import Console
 from rich.table import Table
 
 from lib.context import CLIContext
+from lib.i18n import t
 from lib.projects_loader import load_projects_file, resolve_projects_path
 
 console = Console()
-app = typer.Typer(help="Local projects manifest (projects.yaml)")
+
+app = typer.Typer(help=t("cmd.projects.help"))
 
 
-@app.command("list")
+@app.command("list", help=t("cmd.projects.list"))
 def projects_list(
     ctx: typer.Context,
     projects_file: Optional[str] = typer.Option(None, "-f", "--file"),
@@ -50,7 +52,7 @@ def projects_list(
 @app.command("show")
 def projects_show(
     ctx: typer.Context,
-    project_path: str = typer.Argument(..., help="group/repo path"),
+    project_path: str = typer.Argument(..., help=t("cmd.projects.path")),
     projects_file: Optional[str] = typer.Option(None, "-f", "--file"),
 ) -> None:
     cli: CLIContext = ctx.obj

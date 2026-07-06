@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+# Initialize language before command modules load (they use t() in Typer help).
+from lib.i18n import init_i18n, t
+
+init_i18n()
+
 from typing import Optional
 
 import typer
@@ -30,7 +35,7 @@ from lib.commands import projects_cmd
 
 app = typer.Typer(
     name="gitlab-tool",
-    help="Cross-platform GitLab automation CLI",
+    help=t("app.help"),
     no_args_is_help=True,
 )
 
@@ -38,11 +43,12 @@ app = typer.Typer(
 @app.callback()
 def main(
     ctx: typer.Context,
-    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile name"),
-    url: Optional[str] = typer.Option(None, "--url", help="Override GitLab URL"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Print actions without executing"),
-    config: Optional[str] = typer.Option(None, "--config", help="Path to config.yaml"),
-    file: Optional[str] = typer.Option(None, "-f", "--file", help="Path to projects.yaml"),
+    profile: Optional[str] = typer.Option(None, "--profile", help=t("opt.profile")),
+    url: Optional[str] = typer.Option(None, "--url", help=t("opt.url")),
+    dry_run: bool = typer.Option(False, "--dry-run", help=t("opt.dry_run")),
+    config: Optional[str] = typer.Option(None, "--config", help=t("opt.config")),
+    file: Optional[str] = typer.Option(None, "-f", "--file", help=t("opt.file")),
+    lang: Optional[str] = typer.Option(None, "--lang", "-L", help=t("opt.lang")),
 ) -> None:
     ctx.obj = CLIContext(
         profile=profile,

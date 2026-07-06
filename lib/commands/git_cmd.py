@@ -14,11 +14,13 @@ from lib.projects_loader import load_projects_file, resolve_projects_path
 from lib.repo_scanner import filter_by_status, resolve_repo_targets
 from lib.utils import BatchResult, confirm_action, console
 
-git_app = typer.Typer(help="Batch git operations across repos")
-branch_app = typer.Typer(help="Branch operations")
-tag_app = typer.Typer(help="Tag operations")
-remote_app = typer.Typer(help="Remote operations")
-stash_app = typer.Typer(help="Stash operations")
+from lib.i18n import t
+
+git_app = typer.Typer(help=t("cmd.git.help"))
+branch_app = typer.Typer(help=t("cmd.git.branch"))
+tag_app = typer.Typer(help=t("cmd.git.tag"))
+remote_app = typer.Typer(help=t("cmd.git.remote"))
+stash_app = typer.Typer(help=t("cmd.git.stash"))
 
 git_app.add_typer(branch_app, name="branch")
 git_app.add_typer(tag_app, name="tag")
@@ -499,7 +501,7 @@ def git_submodule(
 
 @git_app.command("worktree")
 def git_worktree_stub():
-    raise typer.BadParameter("git worktree: not implemented yet (phase 2)")
+    raise typer.BadParameter(t("stub.worktree"))
 
 
 @git_app.command("commit")
