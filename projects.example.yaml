@@ -1,0 +1,26 @@
+version: 1
+workspace: broker-common-dev
+
+defaults:
+  layout: nested
+  branch: develop
+
+projects:
+  - path: broker-common/broker-common-email
+    enabled: true
+    services: [email, notification]
+    note: 邮件服务，日常必 sync
+
+  - path: broker-common/transaction/broker-common-yunshang-client
+    enabled: true
+    services: [yunshang, transaction]
+    note: 子 group 下的客户端
+
+  - path: broker-common/broker-architecture-design
+    enabled: true
+    services: [architecture]
+
+  - path: broker-common/broker-common-module-log
+    enabled: false
+    services: [logging]
+    note: 暂时不做

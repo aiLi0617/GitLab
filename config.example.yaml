@@ -1,0 +1,39 @@
+default_profile: default
+profiles:
+  default:
+    url: https://gitlab.com
+    auth_type: pat
+    token_env: GITLAB_TOKEN
+  company:
+    url: https://gitlab.company.com
+    auth_type: oauth
+    token_env: GITLAB_OAUTH_TOKEN
+
+scope:
+  default_projects_file: projects.yaml
+
+clone:
+  base_dir: ./repos
+  layout: nested
+  use_ssh: true
+  shallow_depth: 0
+  recursive: false
+  include: []
+  exclude: []
+
+git:
+  default_branch: main
+  parallel_jobs: 4
+  auto_stash: false
+
+protect:
+  presets:
+    main:
+      push_access_level: maintainer
+      merge_access_level: developer
+      allow_force_push: false
+      code_owner_approval: false
+    release:
+      push_access_level: no_one
+      merge_access_level: maintainer
+      allow_force_push: false
