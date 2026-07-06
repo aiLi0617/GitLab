@@ -502,5 +502,10 @@ def git_worktree_stub():
     raise typer.BadParameter("git worktree: not implemented yet (phase 2)")
 
 
+@git_app.command("commit")
+def git_commit_stub():
+    raise typer.BadParameter("git commit batch: not implemented yet (phase 2)")
+
+
 def register(app: typer.Typer) -> None:
     app.add_typer(git_app, name="git")

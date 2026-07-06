@@ -27,7 +27,7 @@ def register(app: typer.Typer) -> None:
         """Fetch + pull all repos from projects.yaml or --dest."""
         cli: CLIContext = ctx.obj
         cfg = cli.config
-        auth = resolve_auth(cfg, cli.url)
+        auth = None if cli.dry_run else resolve_auth(cfg, cli.url)
         pf = None
         pf_path = resolve_projects_path(projects_file or cli.projects_file, cfg)
         if pf_path:
@@ -44,11 +44,13 @@ def register(app: typer.Typer) -> None:
                 continue
             br = t.branch or default_branch
             try:
-                runner = GitRunner(t.path, auth.ssh_key)
                 if cli.dry_run:
                     console.print(f"[dry-run] sync {t.path} branch={br}")
                     result.success.append(str(t.path))
                     continue
+                if auth is None:
+                    auth = resolve_auth(cfg, cli.url)
+                runner = GitRunner(t.path, auth.ssh_key)
                 runner.fetch(prune=True)
                 runner.pull(branch=br, rebase=rebase, auto_stash=auto_stash or cfg.git.get("auto_stash", False))
                 result.success.append(str(t.path))

@@ -7,7 +7,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from lib.auth import AuthInfo, https_clone_url, resolve_auth, ssh_clone_url
+from lib.auth import https_clone_url, resolve_auth, ssh_clone_url
 from lib.context import CLIContext
 from lib.git_ops import GitRunner
 from lib.gitlab_client import create_client, iter_group_projects
@@ -17,7 +17,7 @@ from lib.projects_loader import (
     local_path_for_project,
     resolve_projects_path,
 )
-from lib.utils import BatchResult, console as rich_console
+from lib.utils import BatchResult
 
 console = Console()
 
